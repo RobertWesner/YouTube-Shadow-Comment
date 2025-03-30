@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name            YouTube Shadow Comment
 // @description     Checks if your comments are visible to the public
-// @version         20250330-0
+// @version         20250330-1
 // @author          Robert Wesner (https://robert.wesner.io)
 // @license         MIT
 // @namespace       http://robert.wesner.io/
@@ -20,10 +20,6 @@
     }
 
     document.head.insertAdjacentHTML('beforeend', `<style>
-        body:not([data-ysc-loaded]) tp-yt-iron-dropdown {
-            display: none !important;
-        }
-
         ytd-comment-view-model #body {
             padding: 1em;
             border-radius: 1em;
@@ -46,29 +42,17 @@
         }
     </style>`)
 
-    let searchQuery;
-    const waitForCurrentUserInterval = setInterval(() => {
-        document.querySelector('#avatar-btn').click();
-        document.querySelector('#avatar-btn').click();
-
-        if (!document.querySelector('#channel-handle')) {
+    setInterval(() => {
+        if (window.location.pathname !== '/watch') {
             return;
         }
 
-        searchQuery = `#author-text[href="/${document.querySelector('#channel-handle').innerText}"]`;
-        clearInterval(waitForCurrentUserInterval);
-    }, 1000);
-
-    const waitForCommentInterval = setInterval(() => {
-        if (!document.querySelector('.ytd-comment-simplebox-renderer img#img') || searchQuery === '') {
+        if (!document.querySelector('.ytd-comment-simplebox-renderer img#img')) {
             return;
         }
 
-        clearInterval(waitForCommentInterval);
-
-        // close dropdown if it was left open
-        if (document.querySelector('tp-yt-iron-dropdown[aria-hidden="false"]')) {
-            document.querySelector('#avatar-btn').click();
+        if (document.body.hasAttribute('data-ysc-loaded')) {
+            return;
         }
         document.body.setAttribute('data-ysc-loaded', 'loaded');
 
@@ -82,56 +66,60 @@
             })
         );
 
-        setInterval(() => {
-            if (!window.location.pathname.endsWith('/watch')) {
-                return;
-            }
+        fetch('https://www.youtube.com/playlist?list=LL').then(r => r.text()).then(html => {
+            let searchQuery = `#author-text[href="/${html.match(/"canonicalBaseUrl":"\/(@\w+)/)[1]}"]`
 
-            if (waitForCleanup) {
-                return;
-            }
-
-            document.querySelectorAll(searchQuery).forEach(element => {
-                const parent = element.parentNode.parentNode.parentNode.parentNode.parentNode;
-                if (parent.hasAttribute('data-ysc-invisible-comment')) {
+            setInterval(() => {
+                if (!window.location.pathname.endsWith('/watch')) {
                     return;
                 }
 
-                const commentLink = parent.querySelector('#published-time-text a').href;
-                parent.setAttribute('data-ysc-invisible-comment', 'checking');
+                if (waitForCleanup) {
+                    return;
+                }
 
-                fetch(commentLink)
-                    .then(response => response.text())
-                    .then(text => {
-                        const pos = text.search('"continuationCommand"');
-                        const continuationCommand = text.substring(pos + 32, text.indexOf('"', pos + 32));
+                document.querySelectorAll(searchQuery).forEach(element => {
+                    const parent = element.parentNode.parentNode.parentNode.parentNode.parentNode;
+                    if (parent.hasAttribute('data-ysc-invisible-comment')) {
+                        return;
+                    }
 
-                        fetch('https://www.youtube.com/youtubei/v1/next?prettyPrint=false', {
-                            method: 'POST',
-                            body: JSON.stringify({
-                                context: {
-                                    client: {
-                                        clientName: 'WEB',
-                                        clientVersion: '2.20240411.09.00'
-                                    }
-                                },
-                                continuation: continuationCommand,
+                    const commentLink = parent.querySelector('#published-time-text a').href;
+                    parent.setAttribute('data-ysc-invisible-comment', 'checking');
+
+                    fetch(commentLink)
+                        .then(response => response.text())
+                        .then(text => {
+                            const pos = text.search('"continuationCommand"');
+                            const continuationCommand = text.substring(pos + 32, text.indexOf('"', pos + 32));
+
+                            fetch('https://www.youtube.com/youtubei/v1/next?prettyPrint=false', {
+                                method: 'POST',
+                                body: JSON.stringify({
+                                    context: {
+                                        client: {
+                                            clientName: 'WEB',
+                                            clientVersion: '2.20240411.09.00'
+                                        }
+                                    },
+                                    continuation: continuationCommand,
+                                })
                             })
-                        })
-                            .then(response => response.json())
-                            .then(json => {
-                                const { payload } = json.frameworkUpdates.entityBatchUpdate.mutations.filter(element => element.payload.hasOwnProperty('commentEntityPayload'))[0];
+                                .then(response => response.json())
+                                .then(json => {
+                                    const { payload } = json.frameworkUpdates.entityBatchUpdate.mutations.filter(element => element.payload.hasOwnProperty('commentEntityPayload'))[0];
 
-                                // checks if first fetched comment matches highlighted comment, i.e. comment is visible publicly
-                                parent.setAttribute(
-                                    'data-ysc-invisible-comment',
-                                    commentLink.endsWith(payload.commentEntityPayload.properties.commentId)
-                                        ? 'valid'
-                                        : 'banned'
-                                );
-                            });
-                    });
-            });
-        }, 2000);
+                                    // checks if first fetched comment matches highlighted comment, i.e. comment is visible publicly
+                                    parent.setAttribute(
+                                        'data-ysc-invisible-comment',
+                                        commentLink.endsWith(payload.commentEntityPayload.properties.commentId)
+                                            ? 'valid'
+                                            : 'banned'
+                                    );
+                                });
+                        });
+                });
+            }, 2000);
+        });
     }, 1000);
 })();

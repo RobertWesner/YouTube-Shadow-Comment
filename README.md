@@ -9,6 +9,12 @@
 
 Due to automatic filters on YouTube, your comment may show up to you but be entirely invisible to the public.
 
+> **Disclaimer**:
+> 
+> This script is highly experimental and currently in beta.
+> It seems to suffer from reliability issues and may flag visible comments as hidden.
+> 
+> It is not yet intended for public use.
 
 ## Installation
 

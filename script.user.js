@@ -1,16 +1,24 @@
 // ==UserScript==
 // @name            YouTube Shadow Comment
 // @description     Checks if your comments are visible to the public
-// @version         2024-04-15
+// @version         20250330-0
 // @author          Robert Wesner (https://robert.wesner.io)
 // @license         MIT
 // @namespace       http://robert.wesner.io/
-// @match           https://www.youtube.com/*
-// @icon            https://www.google.com/s2/favicons?sz=64&domain=youtube.com
+// @match           https://*.youtube.com/*
+// @icon            https://scripts.yt/favicon.ico
 // @grant           none
 // ==/UserScript==
 
+/**
+ * @var {{ defaultPolicy: any, createPolicy: (string, Object) => void }} window.trustedTypes
+ */
+
 (() => {
+    if (window.hasOwnProperty('trustedTypes') && !window.trustedTypes.defaultPolicy) {
+        window.trustedTypes.createPolicy('default', { createHTML: string => string });
+    }
+
     document.head.insertAdjacentHTML('beforeend', `<style>
         body:not([data-ysc-loaded]) tp-yt-iron-dropdown {
             display: none !important;

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name            YouTube Shadow Comment
 // @description     Checks if your comments are visible to the public
-// @version         20250330-1
+// @version         20250330-2
 // @author          Robert Wesner (https://robert.wesner.io)
 // @license         MIT
 // @namespace       http://robert.wesner.io/
@@ -108,11 +108,17 @@
                                 .then(response => response.json())
                                 .then(json => {
                                     const { payload } = json.frameworkUpdates.entityBatchUpdate.mutations.filter(element => element.payload.hasOwnProperty('commentEntityPayload'))[0];
+                                    console.log(
+                                        parent,
+                                        commentLink,
+                                        payload,
+                                        '---------------'
+                                    )
 
                                     // checks if first fetched comment matches highlighted comment, i.e. comment is visible publicly
                                     parent.setAttribute(
                                         'data-ysc-invisible-comment',
-                                        commentLink.endsWith(payload.commentEntityPayload.properties.commentId)
+                                        commentLink.includes(`&lc=${payload.commentEntityPayload.properties.commentId}`)
                                             ? 'valid'
                                             : 'banned'
                                     );

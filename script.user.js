@@ -8,6 +8,8 @@
 // @match           https://*.youtube.com/*
 // @icon            https://scripts.yt/favicon.ico
 // @grant           none
+// @homepageURL     https://scripts.yt/scripts/youtube-shadow-comment-See-Blocked-Comments-On-YouTube-Video
+// @supportURL      https://github.com/RobertWesner/YouTube-Shadow-Comment/issues
 // ==/UserScript==
 
 /**

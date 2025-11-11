@@ -5,6 +5,13 @@
     </p>
 </div>
 
+
+---
+
+<div align="center">
+Get more YouTube scripts on <a href="https://scripts.yt"><img src="https://scripts.yt/favicon.ico" height="10"> scripts.yt</a>
+</div>
+
 ---
 
 Due to automatic filters on YouTube, your comment may show up to you but be entirely invisible to the public.

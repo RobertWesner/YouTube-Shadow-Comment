@@ -1,14 +1,16 @@
 // ==UserScript==
 // @name            YouTube Shadow Comment
 // @description     Checks if your comments are visible to the public
-// @version         20250330-2
+// @version         20251117-0
 // @author          Robert Wesner (https://robert.wesner.io)
 // @license         MIT
 // @namespace       http://robert.wesner.io/
 // @match           https://*.youtube.com/*
 // @icon            https://scripts.yt/favicon.ico
 // @grant           none
-// @homepageURL     https://scripts.yt/scripts/youtube-shadow-comment-See-Blocked-Comments-On-YouTube-Video
+// @downloadURL     https://raw.githubusercontent.com/RobertWesner/YouTube-Shadow-Comment/main/script.user.js
+// @updateURL       https://raw.githubusercontent.com/RobertWesner/YouTube-Shadow-Comment/main/script.user.js
+// @homepageURL     https://scripts.yt/scripts/youtube-shadow-comment
 // @supportURL      https://github.com/RobertWesner/YouTube-Shadow-Comment/issues
 // ==/UserScript==
 
@@ -26,7 +28,7 @@
             padding: 1em;
             border-radius: 1em;
         }
-        
+
         [data-ysc-invisible-comment="checking"] {
             background-color: rgba(100, 100, 100, 20%) !important;
         }
@@ -44,6 +46,8 @@
         }
     </style>`)
 
+    // Both intervals should be infrequent enough and have proper guards inside to prevent performance issues.
+    // Listening to navigation events or similar is unreliable as you also need to listen for comment scrolling.
     setInterval(() => {
         if (window.location.pathname !== '/watch') {
             return;
@@ -69,7 +73,7 @@
         );
 
         fetch('https://www.youtube.com/playlist?list=LL').then(r => r.text()).then(html => {
-            let searchQuery = `#author-text[href="/${html.match(/"canonicalBaseUrl":"\/(@\w+)/)[1]}"]`
+            let searchQuery = `#author-text[href="/${html.match(/ownerEndpoint.*?"url":"\/(@[\w-_.]+)","webPageType":"WEB_PAGE_TYPE_CHANNEL"/)[1]}"]`
 
             setInterval(() => {
                 if (!window.location.pathname.endsWith('/watch')) {

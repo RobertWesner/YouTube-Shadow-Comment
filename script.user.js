@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name            YouTube Shadow Comment
 // @description     Checks if your comments are visible to the public
-// @version         20251117-0
+// @version         20251118-0
 // @author          Robert Wesner (https://robert.wesner.io)
 // @license         MIT
 // @namespace       http://robert.wesner.io/
@@ -14,11 +14,30 @@
 // @supportURL      https://github.com/RobertWesner/YouTube-Shadow-Comment/issues
 // ==/UserScript==
 
+// ### INFORMATION FOR USERS AND YOUTUBE ###
+//
+// This is much more lightweight in terms of requests than opening a private window and checking this way.
+// The hope exists, that YouTube will not be bothered by this minimal request, even if it operates in a possibly "reverse engineered" context.
+// Though that context did not require any work besides opening the network tab.
+// I have taken care to only send requests when necessary, with the consequences of those requests on YouTube's end considered.
+// I could rework it to use iframes and localStorage but that leads to more performance problems on both the user's and YouTube's end.
+//
+// I deliberately chose that single endpoint (v1/next) instead of YouTube Data API,
+// as to not have to process user information on my end.
+// All data processed by this userscript stays within the YouTube context.
+//
+// It is very unlikely to get you, the user, personally in trouble, but the usual disclaimer applies.
+// This is a third party script operating on a singular YouTube-internal endpoint in a non-bot, non-scraping way,
+// but YouTube has every right to block access to that endpoint if they deem this script to be harmful.
+//
+// Anyone who is *really* concerned that this might get their account in trouble, should skip this, even if the chance for repercussions is negligible.
+
 /**
  * @var {{ defaultPolicy: any, createPolicy: (string, Object) => void }} window.trustedTypes
  */
 
 (() => {
+    // TODO: rework the dynamic HTML to not require this bypass
     if (window.hasOwnProperty('trustedTypes') && !window.trustedTypes.defaultPolicy) {
         window.trustedTypes.createPolicy('default', { createHTML: string => string });
     }
@@ -113,18 +132,14 @@
                             })
                                 .then(response => response.json())
                                 .then(json => {
-                                    const { payload } = json.frameworkUpdates.entityBatchUpdate.mutations.filter(element => element.payload.hasOwnProperty('commentEntityPayload'))[0];
-                                    console.log(
-                                        parent,
-                                        commentLink,
-                                        payload,
-                                        '---------------'
-                                    )
+                                    const { payload } = json?.frameworkUpdates?.entityBatchUpdate?.mutations?.filter(element =>
+                                        element?.payload?.commentEntityPayload?.properties?.commentId === new URLSearchParams(commentLink).get('lc')
+                                    )?.[0] ?? { payload: null };
 
                                     // checks if first fetched comment matches highlighted comment, i.e. comment is visible publicly
                                     parent.setAttribute(
                                         'data-ysc-invisible-comment',
-                                        commentLink.includes(`&lc=${payload.commentEntityPayload.properties.commentId}`)
+                                        !!payload
                                             ? 'valid'
                                             : 'banned'
                                     );
